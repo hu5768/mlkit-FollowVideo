@@ -24,7 +24,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   String? imagePath;
   void _updatePoseHistory() {
     final currentFrame =
-        (_controller!.value.position.inMilliseconds / 1000).round();
+        (_controller!.value.position.inMilliseconds / 100).round();
     print("프레임 : $currentFrame");
     if (_poseHistory.isNotEmpty) {
       print("포즈배열 크기: ${_poseHistory.length}");
