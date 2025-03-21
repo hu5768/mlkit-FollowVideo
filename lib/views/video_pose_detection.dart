@@ -20,14 +20,15 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   String? _videoPath;
   final List<List<PoseLandmark>> _poseHistory = [];
 
+  final maxSecond = 10;
   int _currentFrameIndex = 0;
   String? imagePath;
   void _updatePoseHistory() {
     final currentFrame =
         (_controller!.value.position.inMilliseconds / 100).round();
-    print("프레임 : $currentFrame");
+    //print("프레임 : $currentFrame");
     if (_poseHistory.isNotEmpty) {
-      print("포즈배열 크기: ${_poseHistory.length}");
+      //print("포즈배열 크기: ${_poseHistory.length}");
 
       if (currentFrame < _poseHistory.length) {
         _currentFrameIndex = currentFrame;
@@ -96,7 +97,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
 
     int videoDuration = _controller!.value.duration.inMilliseconds;
     // 비디오 프레임별 포즈 감지 (프레임을 이미지로 변환해야 함)
-    for (int i = 0; i < 2000; i += 100) {
+    for (int i = 0; i < maxSecond * 1000; i += 100) {
       // 10프레임 간격으로 처리
       final frameImage = await _getFrameAt(i);
       if (frameImage == null) continue;
@@ -104,12 +105,10 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       print('프레임 $i 처리');
       final inputImage = InputImage.fromFile(frameImage);
       final poses = await poseDetector.processImage(inputImage);
-
+      print('프레임 $i pose 추출처리');
       if (poses.isNotEmpty) {
         _poseHistory.add(poses.first.landmarks.values.toList());
         //print("코의 좌표: ${poses.first.landmarks[PoseLandmarkType.nose]?.x}");
-
-        setState(() {});
       }
     }
 
@@ -122,7 +121,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       final directory = await getTemporaryDirectory();
       final outputPath = '${directory.path}/frame_$milliseconds.jpg';
 
-      print(_videoPath);
+      //print(_videoPath);
       // FFmpeg 명령어 실행 (비디오에서 특정 시간의 프레임 추출)
       String command =
           '-i "$_videoPath" -ss ${milliseconds / 1000} -vframes 1 "$outputPath"';
@@ -162,30 +161,30 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
             onPressed: _pickVideo,
             child: const Text('비디오 선택'),
           ),
+          Text("processing ${_poseHistory.length} / ${maxSecond * 10}"),
+          Text("currentFrame $_currentFrameIndex / ${maxSecond * 10}"),
           if (_controller != null && _controller!.value.isInitialized)
-            Stack(
-              children: [
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.6,
-                  child: AspectRatio(
-                    aspectRatio: _controller!.value.aspectRatio,
-                    child: VideoPlayer(_controller!),
-                  ),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: AspectRatio(
+                aspectRatio: _controller!.value.aspectRatio,
+                child: Stack(
+                  children: [
+                    VideoPlayer(_controller!),
+
+                    if (_controller != null && _controller!.value.isInitialized)
+                      CustomPaint(
+                        painter: PosePainter(
+                            _poseHistory.isEmpty
+                                ? []
+                                : _poseHistory[_currentFrameIndex],
+                            _controller!.value.size),
+                        child: Container(),
+                      ),
+                    //if (imagePath != null) Image.file(File(imagePath!))
+                  ],
                 ),
-                if (_controller != null && _controller!.value.isInitialized)
-                  CustomPaint(
-                    painter: PosePainter(
-                        _poseHistory.isEmpty
-                            ? []
-                            : _poseHistory[_currentFrameIndex],
-                        _controller!.value.size),
-                    child: SizedBox(
-                      width: _controller!.value.size.width,
-                      height: _controller!.value.size.height,
-                    ),
-                  ),
-                //if (imagePath != null) Image.file(File(imagePath!))
-              ],
+              ),
             ),
         ],
       ),
@@ -217,7 +216,8 @@ class PosePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     Map<PoseLandmarkType, Offset> landmarks = {};
-
+    canvas.drawCircle(const Offset(0, 0), 2, paint);
+    canvas.drawCircle(Offset(size.width, size.height), 2, paint);
     // 🎯 랜드마크 좌표 변환하여 저장
     for (var landmark in currentPose) {
       final Offset point = Offset(landmark.x * scaleX, landmark.y * scaleY);
