@@ -24,12 +24,14 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   int _currentFrameIndex = 0;
   String? imagePath;
   void _updatePoseHistory() {
-    final currentFrame =
-        (_controller!.value.position.inMilliseconds / 100).round();
     //print("프레임 : $currentFrame");
     if (_poseHistory.isNotEmpty) {
       //print("포즈배열 크기: ${_poseHistory.length}");
-
+      final totalMs = _controller!.value.duration.inMilliseconds;
+      final currentFrame =
+          ((_controller!.value.position.inMilliseconds / totalMs) *
+                  _poseHistory.length)
+              .round();
       if (currentFrame < _poseHistory.length) {
         _currentFrameIndex = currentFrame;
       }
@@ -58,7 +60,10 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       });
 
       await _deletePreviousImages();
-      _processVideo();
+      final frames = await extractFramesOnce(_videoPath!);
+      if (frames.isNotEmpty) {
+        runPoseDetectionOnFrames(frames);
+      }
     }
   }
 
@@ -90,58 +95,58 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
     return newPath; // 복사된 새 비디오 경로 반환
   }
 
-  Future<void> _processVideo() async {
+  void runPoseDetectionOnFrames(List<File> frames) async {
     final poseDetector = PoseDetector(
-      options: PoseDetectorOptions(mode: PoseDetectionMode.stream),
+      options: PoseDetectorOptions(
+        mode: PoseDetectionMode.stream,
+        model: PoseDetectionModel.base,
+      ),
     );
 
-    int videoDuration = _controller!.value.duration.inMilliseconds;
-    // 비디오 프레임별 포즈 감지 (프레임을 이미지로 변환해야 함)
-    for (int i = 0; i < maxSecond * 1000; i += 100) {
-      // 10프레임 간격으로 처리
-      final frameImage = await _getFrameAt(i);
-      if (frameImage == null) continue;
-
-      print('프레임 $i 처리');
-      final inputImage = InputImage.fromFile(frameImage);
+    for (final frame in frames) {
+      final inputImage = InputImage.fromFile(frame);
       final poses = await poseDetector.processImage(inputImage);
-      print('프레임 $i pose 추출처리');
+
       if (poses.isNotEmpty) {
         _poseHistory.add(poses.first.landmarks.values.toList());
         //print("코의 좌표: ${poses.first.landmarks[PoseLandmarkType.nose]?.x}");
+      } else if (_poseHistory.isNotEmpty) {
+        _poseHistory.add(_poseHistory.last);
+      } else {
+        _poseHistory.add(createEmptyPose());
       }
+
+      await Future.delayed(const Duration(milliseconds: 10)); // 속도 조절
     }
 
     await poseDetector.close();
   }
 
-  Future<File?> _getFrameAt(int milliseconds) async {
-    try {
-      // 앱의 임시 디렉토리 가져오기
-      final directory = await getTemporaryDirectory();
-      final outputPath = '${directory.path}/frame_$milliseconds.jpg';
+  Future<List<File>> extractFramesOnce(String videoPath) async {
+    final tempDir = await getTemporaryDirectory();
+    final outputDir = '${tempDir.path}/frames';
+    await Directory(outputDir).create(recursive: true);
 
-      //print(_videoPath);
-      // FFmpeg 명령어 실행 (비디오에서 특정 시간의 프레임 추출)
-      String command =
-          '-i "$_videoPath" -ss ${milliseconds / 1000} -vframes 1 "$outputPath"';
+    // 프레임 추출 명령어 (fps: 초당 프레임 수)
+    final command = '-i "$videoPath" -vf fps=5 "$outputDir/frame_%03d.jpg"';
 
-      await FFmpegKit.execute(command).then((session) async {
-        final returnCode = await session.getReturnCode();
-        // ✅ 널 체크 후 정적 메서드 사용
-        if (returnCode != null && ReturnCode.isSuccess(returnCode)) {
-          print("✅ 프레임 추출 성공: $outputPath");
-        } else {
-          print("❌ FFmpeg 실행 실패, 코드: $returnCode");
-        }
-      });
-      setState(() {
-        imagePath = outputPath;
-      });
-      return File(outputPath); // 추출된 프레임 파일 반환
-    } catch (e) {
-      print("⚠️ 프레임 추출 오류: $e");
-      return null;
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
+
+    if (ReturnCode.isSuccess(returnCode)) {
+      print("✅ 프레임 추출 완료");
+
+      // 추출된 프레임 파일 목록 리턴
+      final files = Directory(outputDir)
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.jpg'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path)); // 이름순 정렬
+      return files;
+    } else {
+      print("❌ 프레임 추출 실패");
+      return [];
     }
   }
 
@@ -161,8 +166,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
             onPressed: _pickVideo,
             child: const Text('비디오 선택'),
           ),
-          Text("processing ${_poseHistory.length} / ${maxSecond * 10}"),
-          Text("currentFrame $_currentFrameIndex / ${maxSecond * 10}"),
+          Text("currentFrame $_currentFrameIndex / ${_poseHistory.length}"),
           if (_controller != null && _controller!.value.isInitialized)
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.6,
@@ -258,4 +262,18 @@ class PosePainter extends CustomPainter {
     return oldDelegate.currentPose != currentPose ||
         oldDelegate.imageSize != imageSize;
   }
+}
+
+PoseLandmark emptyLandmark(PoseLandmarkType type) {
+  return PoseLandmark(
+    type: type,
+    x: 0.0,
+    y: 0.0,
+    z: 0.0,
+    likelihood: 0.0, // 확률도 0으로
+  );
+}
+
+List<PoseLandmark> createEmptyPose() {
+  return PoseLandmarkType.values.map((type) => emptyLandmark(type)).toList();
 }
