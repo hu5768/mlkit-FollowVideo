@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter_full/return_code.dart';
@@ -19,25 +20,42 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   VideoPlayerController? _controller;
   String? _videoPath;
   final List<List<PoseLandmark>> _poseHistory = [];
-
+  Timer? _poseTimer;
   final maxSecond = 10;
   int _currentFrameIndex = 0;
+  int _elapsedMs = 0;
   String? imagePath;
   void _updatePoseHistory() {
     //print("프레임 : $currentFrame");
+    _elapsedMs += 33;
     if (_poseHistory.isNotEmpty) {
       //print("포즈배열 크기: ${_poseHistory.length}");
-      final totalMs = _controller!.value.duration.inMilliseconds;
+      int totalMs = _controller!.value.duration.inMilliseconds;
       final currentFrame =
-          ((_controller!.value.position.inMilliseconds / totalMs) *
-                  _poseHistory.length)
-              .round();
+          ((_poseHistory.length * _elapsedMs) / totalMs).floor();
+      if (_elapsedMs > _controller!.value.position.inMilliseconds) {
+        _elapsedMs = 0;
+      }
+
       if (currentFrame < _poseHistory.length) {
         _currentFrameIndex = currentFrame;
+      } else {
+        _elapsedMs = 0;
       }
 
       setState(() {});
     }
+  }
+
+  void _startPoseTimer() {
+    _poseTimer?.cancel();
+    _poseTimer = Timer.periodic(const Duration(milliseconds: 32), (_) {
+      _updatePoseHistory();
+    });
+  }
+
+  void _stopPoseTimer() {
+    _poseTimer?.cancel();
   }
 
   Future<void> _pickVideo() async {
@@ -47,6 +65,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
     if (_controller != null) {
       _controller!.removeListener(_updatePoseHistory); // 기존 리스너 제거 (중복 방지)
     }
+
     if (result != null && result.files.isNotEmpty) {
       setState(() {
         _videoPath = result.files.single.path!;
@@ -54,7 +73,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
           ..initialize().then((_) {
             _controller!.setLooping(true);
             _controller!.play();
-            _controller!.addListener(_updatePoseHistory);
+            _startPoseTimer();
             setState(() {});
           });
       });
@@ -116,7 +135,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
         _poseHistory.add(createEmptyPose());
       }
 
-      await Future.delayed(const Duration(milliseconds: 10)); // 속도 조절
+      await Future.delayed(const Duration(milliseconds: 5)); // 속도 조절
     }
 
     await poseDetector.close();
@@ -128,7 +147,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
     await Directory(outputDir).create(recursive: true);
 
     // 프레임 추출 명령어 (fps: 초당 프레임 수)
-    final command = '-i "$videoPath" -vf fps=5 "$outputDir/frame_%03d.jpg"';
+    final command = '-i "$videoPath" -vf fps=30 "$outputDir/frame_%03d.jpg"';
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -143,6 +162,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
           .where((f) => f.path.endsWith('.jpg'))
           .toList()
         ..sort((a, b) => a.path.compareTo(b.path)); // 이름순 정렬
+      print("📸 총 프레임 수: ${files.length}");
       return files;
     } else {
       print("❌ 프레임 추출 실패");
@@ -152,6 +172,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
 
   @override
   void dispose() {
+    _stopPoseTimer();
     _controller?.dispose();
     super.dispose();
   }
