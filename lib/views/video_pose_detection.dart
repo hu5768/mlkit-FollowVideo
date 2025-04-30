@@ -21,7 +21,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   VideoPlayerController? _controller;
   String? _videoPath;
   final List<List<PoseLandmark>> _poseHistory = [];
-  final List<Rect> _bboxHistory = [];
+  final List<List<Rect>> _bboxHistory = [];
   Timer? _poseTimer;
   final maxSecond = 10;
   int _currentFrameIndex = 0;
@@ -30,16 +30,16 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   void _updatePoseHistory() {
     //print("프레임 : $currentFrame");
     _elapsedMs += 33;
-    if (_poseHistory.isNotEmpty) {
+    if (_bboxHistory.isNotEmpty) {
       //print("포즈배열 크기: ${_poseHistory.length}");
       int totalMs = _controller!.value.duration.inMilliseconds;
       final currentFrame =
-          ((_poseHistory.length * _elapsedMs) / totalMs).floor();
+          ((_bboxHistory.length * _elapsedMs) / totalMs).floor();
       if (_elapsedMs > _controller!.value.position.inMilliseconds) {
         _elapsedMs = 0;
       }
 
-      if (currentFrame < _poseHistory.length) {
+      if (currentFrame < _bboxHistory.length) {
         _currentFrameIndex = currentFrame;
       } else {
         _elapsedMs = 0;
@@ -149,7 +149,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   void runObjectDetectionOnFrames(List<File> frames) async {
     final options = ObjectDetectorOptions(
       mode: DetectionMode.stream,
-      classifyObjects: false,
+      classifyObjects: true,
       multipleObjects: true, // 다수 객체 감지 가능
     );
 
@@ -160,18 +160,16 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       final detectedObjects = await objectDetector.processImage(inputImage);
 
       // 사람만 필터링 (label이 'Person'인 경우만)
-      final personBoxes = detectedObjects
-          .where((obj) =>
-              obj.labels.any((label) => label.text.toLowerCase() == 'person'))
-          .map((obj) => obj.boundingBox)
-          .toList();
+      final personBoxes =
+          detectedObjects.map((obj) => obj.boundingBox).toList();
 
       if (personBoxes.isNotEmpty) {
-        _bboxHistory.add(personBoxes.first); // 한 명만 트래킹
+        print("tracking$personBoxes");
+        _bboxHistory.add(personBoxes); // 한 명만 트래킹
       } else if (_bboxHistory.isNotEmpty) {
         _bboxHistory.add(_bboxHistory.last); // 이전 위치 유지
       } else {
-        _bboxHistory.add(Rect.zero); // 비어있을 경우
+        _bboxHistory.add([]); // 비어있을 경우
       }
 
       await Future.delayed(const Duration(milliseconds: 5)); // 속도 조절
@@ -226,7 +224,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
             onPressed: _pickVideo,
             child: const Text('비디오 선택'),
           ),
-          Text("currentFrame $_currentFrameIndex / ${_poseHistory.length}"),
+          Text("currentFrame $_currentFrameIndex / ${_bboxHistory.length}"),
           if (_controller != null && _controller!.value.isInitialized)
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.6,
@@ -246,8 +244,10 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
                       //   child: Container(),
                       // ),
                       CustomPaint(
-                        painter: RectPainter(
-                          _bboxHistory[_currentFrameIndex], // 프레임별 박스
+                        painter: MultiRectPainter(
+                          _bboxHistory.isEmpty
+                              ? []
+                              : _bboxHistory[_currentFrameIndex], // 프레임별 박스
                           _controller!.value.size,
                         ),
                         child: Container(),
@@ -263,31 +263,31 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   }
 }
 
-class RectPainter extends CustomPainter {
-  final Rect rect;
+class MultiRectPainter extends CustomPainter {
+  final List<Rect> rects;
   final Size videoSize;
 
-  RectPainter(this.rect, this.videoSize);
+  MultiRectPainter(this.rects, this.videoSize);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 비율 맞춰서 scaling
     final double scaleX = size.width / videoSize.width;
     final double scaleY = size.height / videoSize.height;
 
-    final Paint paint = Paint()
-      ..color = Colors.redAccent
-      ..strokeWidth = 3
+    final paint = Paint()
+      ..color = Colors.green
+      ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
-    final scaledRect = Rect.fromLTRB(
-      rect.left * scaleX,
-      rect.top * scaleY,
-      rect.right * scaleX,
-      rect.bottom * scaleY,
-    );
-
-    canvas.drawRect(scaledRect, paint);
+    for (final rect in rects) {
+      final scaledRect = Rect.fromLTRB(
+        rect.left * scaleX,
+        rect.top * scaleY,
+        rect.right * scaleX,
+        rect.bottom * scaleY,
+      );
+      canvas.drawRect(scaledRect, paint);
+    }
   }
 
   @override
