@@ -5,6 +5,7 @@ import 'package:ffmpeg_kit_flutter_full/return_code.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
@@ -20,6 +21,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   VideoPlayerController? _controller;
   String? _videoPath;
   final List<List<PoseLandmark>> _poseHistory = [];
+  final List<Rect> _bboxHistory = [];
   Timer? _poseTimer;
   final maxSecond = 10;
   int _currentFrameIndex = 0;
@@ -81,7 +83,8 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       await _deletePreviousImages();
       final frames = await extractFramesOnce(_videoPath!);
       if (frames.isNotEmpty) {
-        runPoseDetectionOnFrames(frames);
+        //runPoseDetectionOnFrames(frames);
+        runObjectDetectionOnFrames(frames);
       }
     }
   }
@@ -115,6 +118,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   }
 
   void runPoseDetectionOnFrames(List<File> frames) async {
+    //포즈 디텍션
     final poseDetector = PoseDetector(
       options: PoseDetectorOptions(
         mode: PoseDetectionMode.stream,
@@ -141,13 +145,48 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
     await poseDetector.close();
   }
 
+  //ObjectDetecion
+  void runObjectDetectionOnFrames(List<File> frames) async {
+    final options = ObjectDetectorOptions(
+      mode: DetectionMode.stream,
+      classifyObjects: false,
+      multipleObjects: true, // 다수 객체 감지 가능
+    );
+
+    final objectDetector = ObjectDetector(options: options);
+
+    for (final frame in frames) {
+      final inputImage = InputImage.fromFile(frame);
+      final detectedObjects = await objectDetector.processImage(inputImage);
+
+      // 사람만 필터링 (label이 'Person'인 경우만)
+      final personBoxes = detectedObjects
+          .where((obj) =>
+              obj.labels.any((label) => label.text.toLowerCase() == 'person'))
+          .map((obj) => obj.boundingBox)
+          .toList();
+
+      if (personBoxes.isNotEmpty) {
+        _bboxHistory.add(personBoxes.first); // 한 명만 트래킹
+      } else if (_bboxHistory.isNotEmpty) {
+        _bboxHistory.add(_bboxHistory.last); // 이전 위치 유지
+      } else {
+        _bboxHistory.add(Rect.zero); // 비어있을 경우
+      }
+
+      await Future.delayed(const Duration(milliseconds: 5)); // 속도 조절
+    }
+
+    await objectDetector.close();
+  }
+
   Future<List<File>> extractFramesOnce(String videoPath) async {
     final tempDir = await getTemporaryDirectory();
     final outputDir = '${tempDir.path}/frames';
     await Directory(outputDir).create(recursive: true);
 
     // 프레임 추출 명령어 (fps: 초당 프레임 수)
-    final command = '-i "$videoPath" -vf fps=30 "$outputDir/frame_%03d.jpg"';
+    final command = '-i "$videoPath" -vf fps=30 "$outputDir/frame_%05d.jpg"';
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -198,12 +237,19 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
                     VideoPlayer(_controller!),
 
                     if (_controller != null && _controller!.value.isInitialized)
+                      // CustomPaint(
+                      //   painter: PosePainter(
+                      //       _poseHistory.isEmpty
+                      //           ? []
+                      //           : _poseHistory[_currentFrameIndex],
+                      //       _controller!.value.size),
+                      //   child: Container(),
+                      // ),
                       CustomPaint(
-                        painter: PosePainter(
-                            _poseHistory.isEmpty
-                                ? []
-                                : _poseHistory[_currentFrameIndex],
-                            _controller!.value.size),
+                        painter: RectPainter(
+                          _bboxHistory[_currentFrameIndex], // 프레임별 박스
+                          _controller!.value.size,
+                        ),
                         child: Container(),
                       ),
                     //if (imagePath != null) Image.file(File(imagePath!))
@@ -215,6 +261,37 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       ),
     );
   }
+}
+
+class RectPainter extends CustomPainter {
+  final Rect rect;
+  final Size videoSize;
+
+  RectPainter(this.rect, this.videoSize);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 비율 맞춰서 scaling
+    final double scaleX = size.width / videoSize.width;
+    final double scaleY = size.height / videoSize.height;
+
+    final Paint paint = Paint()
+      ..color = Colors.redAccent
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+
+    final scaledRect = Rect.fromLTRB(
+      rect.left * scaleX,
+      rect.top * scaleY,
+      rect.right * scaleX,
+      rect.bottom * scaleY,
+    );
+
+    canvas.drawRect(scaledRect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class PosePainter extends CustomPainter {
