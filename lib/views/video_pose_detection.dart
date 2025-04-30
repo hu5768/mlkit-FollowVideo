@@ -21,7 +21,6 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
   VideoPlayerController? _controller;
   String? _videoPath;
   final List<List<PoseLandmark>> _poseHistory = [];
-  final List<Rect> _bboxHistory = [];
   Timer? _poseTimer;
   final maxSecond = 10;
   int _currentFrameIndex = 0;
@@ -83,8 +82,7 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       await _deletePreviousImages();
       final frames = await extractFramesOnce(_videoPath!);
       if (frames.isNotEmpty) {
-        //runPoseDetectionOnFrames(frames);
-        runObjectDetectionOnFrames(frames);
+        runPoseDetectionOnFrames(frames);
       }
     }
   }
@@ -145,41 +143,6 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
     await poseDetector.close();
   }
 
-  //ObjectDetecion
-  void runObjectDetectionOnFrames(List<File> frames) async {
-    final options = ObjectDetectorOptions(
-      mode: DetectionMode.stream,
-      classifyObjects: false,
-      multipleObjects: true, // 다수 객체 감지 가능
-    );
-
-    final objectDetector = ObjectDetector(options: options);
-
-    for (final frame in frames) {
-      final inputImage = InputImage.fromFile(frame);
-      final detectedObjects = await objectDetector.processImage(inputImage);
-
-      // 사람만 필터링 (label이 'Person'인 경우만)
-      final personBoxes = detectedObjects
-          .where((obj) =>
-              obj.labels.any((label) => label.text.toLowerCase() == 'person'))
-          .map((obj) => obj.boundingBox)
-          .toList();
-
-      if (personBoxes.isNotEmpty) {
-        _bboxHistory.add(personBoxes.first); // 한 명만 트래킹
-      } else if (_bboxHistory.isNotEmpty) {
-        _bboxHistory.add(_bboxHistory.last); // 이전 위치 유지
-      } else {
-        _bboxHistory.add(Rect.zero); // 비어있을 경우
-      }
-
-      await Future.delayed(const Duration(milliseconds: 5)); // 속도 조절
-    }
-
-    await objectDetector.close();
-  }
-
   Future<List<File>> extractFramesOnce(String videoPath) async {
     final tempDir = await getTemporaryDirectory();
     final outputDir = '${tempDir.path}/frames';
@@ -237,21 +200,15 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
                     VideoPlayer(_controller!),
 
                     if (_controller != null && _controller!.value.isInitialized)
-                      // CustomPaint(
-                      //   painter: PosePainter(
-                      //       _poseHistory.isEmpty
-                      //           ? []
-                      //           : _poseHistory[_currentFrameIndex],
-                      //       _controller!.value.size),
-                      //   child: Container(),
-                      // ),
                       CustomPaint(
-                        painter: RectPainter(
-                          _bboxHistory[_currentFrameIndex], // 프레임별 박스
-                          _controller!.value.size,
-                        ),
+                        painter: PosePainter(
+                            _poseHistory.isEmpty
+                                ? []
+                                : _poseHistory[_currentFrameIndex],
+                            _controller!.value.size),
                         child: Container(),
                       ),
+
                     //if (imagePath != null) Image.file(File(imagePath!))
                   ],
                 ),
@@ -261,37 +218,6 @@ class _VideoPoseDetectionState extends State<VideoPoseDetection> {
       ),
     );
   }
-}
-
-class RectPainter extends CustomPainter {
-  final Rect rect;
-  final Size videoSize;
-
-  RectPainter(this.rect, this.videoSize);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 비율 맞춰서 scaling
-    final double scaleX = size.width / videoSize.width;
-    final double scaleY = size.height / videoSize.height;
-
-    final Paint paint = Paint()
-      ..color = Colors.redAccent
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-
-    final scaledRect = Rect.fromLTRB(
-      rect.left * scaleX,
-      rect.top * scaleY,
-      rect.right * scaleX,
-      rect.bottom * scaleY,
-    );
-
-    canvas.drawRect(scaledRect, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class PosePainter extends CustomPainter {
