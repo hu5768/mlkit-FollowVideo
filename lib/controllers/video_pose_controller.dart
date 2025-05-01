@@ -33,33 +33,14 @@ class VideoPoseController extends GetxController {
         ..play();
       controller.refresh();
 
-      _startPoseTimer();
-      await _deletePreviousImages();
-      final frames = await extractFramesOnce(videoPath!.value);
-      if (frames.isNotEmpty) runPoseDetectionOnFrames(frames);
+      _startPoseTimer(); //비디오-랜드마크 타이머 세팅
+      await _deletePreviousImages(); //디렉토리에 남아있는 jpg 제거
+      print("??");
+      final frames = await extractFramesOnce(videoPath!.value); //프레임 분할
+      print("프레임 수 : ${frames.length}");
+      if (frames.isNotEmpty)
+        runPoseDetectionOnFrames(frames); //프레임 -> poseHistory[]
     }
-  }
-
-  void updatePoseHistory() {
-    _elapsedMs += 33;
-    int totalMs = controller.value?.value.duration.inMilliseconds ?? 1;
-    int currentFrame = ((poseHistory.length * _elapsedMs) / totalMs).floor();
-
-    if (currentFrame < poseHistory.length) {
-      currentFrameIndex.value = currentFrame;
-    } else {
-      _elapsedMs = 0;
-    }
-  }
-
-  void _startPoseTimer() {
-    _poseTimer?.cancel();
-    _poseTimer = Timer.periodic(
-        const Duration(milliseconds: 32), (_) => updatePoseHistory());
-  }
-
-  void _stopPoseTimer() {
-    _poseTimer?.cancel();
   }
 
   Future<void> _deletePreviousImages() async {
@@ -68,26 +49,6 @@ class VideoPoseController extends GetxController {
     for (var file in files) {
       if (file is File && file.path.endsWith('.jpg')) await file.delete();
     }
-  }
-
-  Future<List<File>> extractFramesOnce(String videoPath) async {
-    final tempDir = await getTemporaryDirectory();
-    final outputDir = '${tempDir.path}/frames';
-    await Directory(outputDir).create(recursive: true);
-    final command = '-i "$videoPath" -vf fps=30 "$outputDir/frame_%05d.jpg"';
-
-    final session = await FFmpegKit.execute(command);
-    final returnCode = await session.getReturnCode();
-    if (ReturnCode.isSuccess(returnCode)) {
-      final files = Directory(outputDir)
-          .listSync()
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.jpg'))
-          .toList()
-        ..sort((a, b) => a.path.compareTo(b.path));
-      return files;
-    }
-    return [];
   }
 
   void runPoseDetectionOnFrames(List<File> frames) async {
@@ -106,6 +67,61 @@ class VideoPoseController extends GetxController {
       await Future.delayed(const Duration(milliseconds: 5));
     }
     await poseDetector.close();
+  }
+
+  Future<List<File>> extractFramesOnce(String videoPath) async {
+    final tempDir = await getTemporaryDirectory();
+    final outputDir = '${tempDir.path}/frames';
+    final outputDirRef = Directory(outputDir);
+
+    // 디렉토리가 존재하면 모두 삭제
+    if (await outputDirRef.exists()) {
+      await outputDirRef.delete(recursive: true);
+    }
+    // 새로 생성
+    await outputDirRef.create(recursive: true);
+    final command =
+        '-i "$videoPath" -vf fps=30 -vsync vfr "$outputDir/frame_%05d.jpg"';
+
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
+    if (ReturnCode.isSuccess(returnCode)) {
+      final files = Directory(outputDir)
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.jpg'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+      return files;
+    }
+    return [];
+  }
+
+  void updatePoseHistory() {
+    _elapsedMs += 32;
+    int totalMs = controller.value?.value.duration.inMilliseconds ?? 1;
+    int currentFrame = (poseHistory.length * _elapsedMs / totalMs).floor();
+
+    final current = controller.value?.value.position.inMilliseconds ?? 1;
+    if (current < 100) {
+      _elapsedMs = 0;
+    }
+    if (currentFrame < poseHistory.length) {
+      currentFrameIndex.value = currentFrame;
+    } else {
+      _elapsedMs = 0;
+    }
+  }
+
+  void _startPoseTimer() {
+    _poseTimer?.cancel();
+    _poseTimer = Timer.periodic(
+        const Duration(milliseconds: 32), (_) => updatePoseHistory());
+    //32ms 마다 updatePoseHistory() 실행
+  }
+
+  void _stopPoseTimer() {
+    _poseTimer?.cancel();
   }
 
   PoseLandmark emptyLandmark(PoseLandmarkType type) {
