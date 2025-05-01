@@ -38,8 +38,7 @@ class MenePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) =>
-                                    const VideoPoseDetection()),
+                                builder: (context) => VideoPoseDetection()),
                           );
                         },
                         child: const Icon(Icons.camera_alt)),
