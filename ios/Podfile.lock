@@ -1,10 +1,56 @@
 PODS:
   - camera_avfoundation (0.0.1):
     - Flutter
+  - DKImagePickerController/Core (4.3.9):
+    - DKImagePickerController/ImageDataManager
+    - DKImagePickerController/Resource
+  - DKImagePickerController/ImageDataManager (4.3.9)
+  - DKImagePickerController/PhotoGallery (4.3.9):
+    - DKImagePickerController/Core
+    - DKPhotoGallery
+  - DKImagePickerController/Resource (4.3.9)
+  - DKPhotoGallery (0.0.19):
+    - DKPhotoGallery/Core (= 0.0.19)
+    - DKPhotoGallery/Model (= 0.0.19)
+    - DKPhotoGallery/Preview (= 0.0.19)
+    - DKPhotoGallery/Resource (= 0.0.19)
+    - SDWebImage
+    - SwiftyGif
+  - DKPhotoGallery/Core (0.0.19):
+    - DKPhotoGallery/Model
+    - DKPhotoGallery/Preview
+    - SDWebImage
+    - SwiftyGif
+  - DKPhotoGallery/Model (0.0.19):
+    - SDWebImage
+    - SwiftyGif
+  - DKPhotoGallery/Preview (0.0.19):
+    - DKPhotoGallery/Model
+    - DKPhotoGallery/Resource
+    - SDWebImage
+    - SwiftyGif
+  - DKPhotoGallery/Resource (0.0.19):
+    - SDWebImage
+    - SwiftyGif
+  - ffmpeg-kit-ios-full (6.0)
+  - ffmpeg_kit_flutter_full (6.0.3):
+    - ffmpeg_kit_flutter_full/full (= 6.0.3)
+    - Flutter
+  - ffmpeg_kit_flutter_full/full (6.0.3):
+    - ffmpeg-kit-ios-full (= 6.0)
+    - Flutter
+  - file_picker (0.0.1):
+    - DKImagePickerController/PhotoGallery
+    - Flutter
   - Flutter (1.0.0)
   - google_mlkit_commons (0.9.0):
     - Flutter
     - MLKitVision
+  - google_mlkit_object_detection (0.14.0):
+    - Flutter
+    - google_mlkit_commons
+    - GoogleMLKit/ObjectDetection (~> 7.0.0)
+    - GoogleMLKit/ObjectDetectionCustom (~> 7.0.0)
   - google_mlkit_pose_detection (0.13.0):
     - Flutter
     - google_mlkit_commons
@@ -15,6 +61,12 @@ PODS:
     - PromisesObjC (~> 2.4)
   - GoogleMLKit/MLKitCore (7.0.0):
     - MLKitCommon (~> 12.0.0)
+  - GoogleMLKit/ObjectDetection (7.0.0):
+    - GoogleMLKit/MLKitCore
+    - MLKitObjectDetection (~> 6.0.0)
+  - GoogleMLKit/ObjectDetectionCustom (7.0.0):
+    - GoogleMLKit/MLKitCore
+    - MLKitObjectDetectionCustom (~> 6.0.0)
   - GoogleMLKit/PoseDetection (7.0.0):
     - GoogleMLKit/MLKitCore
     - MLKitPoseDetection (~> 1.0.0-beta14)
@@ -44,6 +96,22 @@ PODS:
     - GoogleUtilities/Logger (~> 8.0)
     - GoogleUtilities/UserDefaults (~> 8.0)
     - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
+  - MLKitImageLabelingCommon (8.0.0):
+    - MLKitCommon (~> 12.0)
+    - MLKitVision (~> 8.0)
+  - MLKitObjectDetection (6.0.0):
+    - MLKitCommon (~> 12.0)
+    - MLKitObjectDetectionCommon (~> 8.0)
+    - MLKitVision (~> 8.0)
+    - MLKitVisionKit (~> 9.0)
+  - MLKitObjectDetectionCommon (8.0.0):
+    - MLKitCommon (~> 12.0)
+    - MLKitVision (~> 8.0)
+  - MLKitObjectDetectionCustom (6.0.0):
+    - MLKitCommon (~> 12.0)
+    - MLKitObjectDetectionCommon (~> 8.0)
+    - MLKitVision (~> 8.0)
+    - MLKitVisionKit (~> 9.0)
   - MLKitPoseDetection (1.0.0-beta14):
     - MLKitCommon (~> 12.0)
     - MLKitPoseDetectionCommon (= 1.0.0-beta14)
@@ -61,6 +129,11 @@ PODS:
     - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
     - MLImage (= 1.0.0-beta6)
     - MLKitCommon (~> 12.0)
+  - MLKitVisionKit (9.0.0):
+    - MLKitCommon (~> 12.0)
+    - MLKitImageLabelingCommon (~> 8.0)
+    - MLKitObjectDetectionCommon (~> 8.0)
+    - MLKitVision (~> 8.0)
   - MLKitXenoCommon (1.0.0-beta14):
     - MLKitCommon (~> 12.0)
     - MLKitVision (~> 8.0)
@@ -69,19 +142,37 @@ PODS:
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
   - PromisesObjC (2.4.0)
+  - SDWebImage (5.21.0):
+    - SDWebImage/Core (= 5.21.0)
+  - SDWebImage/Core (5.21.0)
+  - SwiftyGif (5.4.5)
+  - video_player_avfoundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
+  - ffmpeg_kit_flutter_full (from `.symlinks/plugins/ffmpeg_kit_flutter_full/ios`)
+  - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
   - google_mlkit_commons (from `.symlinks/plugins/google_mlkit_commons/ios`)
+  - google_mlkit_object_detection (from `.symlinks/plugins/google_mlkit_object_detection/ios`)
   - google_mlkit_pose_detection (from `.symlinks/plugins/google_mlkit_pose_detection/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
 
 SPEC REPOS:
   trunk:
+    - DKImagePickerController
+    - DKPhotoGallery
+    - ffmpeg-kit-ios-full
     - GoogleDataTransport
     - GoogleMLKit
     - GoogleToolboxForMac
@@ -89,30 +180,53 @@ SPEC REPOS:
     - GTMSessionFetcher
     - MLImage
     - MLKitCommon
+    - MLKitImageLabelingCommon
+    - MLKitObjectDetection
+    - MLKitObjectDetectionCommon
+    - MLKitObjectDetectionCustom
     - MLKitPoseDetection
     - MLKitPoseDetectionAccurate
     - MLKitPoseDetectionCommon
     - MLKitVision
+    - MLKitVisionKit
     - MLKitXenoCommon
     - nanopb
     - PromisesObjC
+    - SDWebImage
+    - SwiftyGif
 
 EXTERNAL SOURCES:
   camera_avfoundation:
     :path: ".symlinks/plugins/camera_avfoundation/ios"
+  ffmpeg_kit_flutter_full:
+    :path: ".symlinks/plugins/ffmpeg_kit_flutter_full/ios"
+  file_picker:
+    :path: ".symlinks/plugins/file_picker/ios"
   Flutter:
     :path: Flutter
   google_mlkit_commons:
     :path: ".symlinks/plugins/google_mlkit_commons/ios"
+  google_mlkit_object_detection:
+    :path: ".symlinks/plugins/google_mlkit_object_detection/ios"
   google_mlkit_pose_detection:
     :path: ".symlinks/plugins/google_mlkit_pose_detection/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  video_player_avfoundation:
+    :path: ".symlinks/plugins/video_player_avfoundation/darwin"
 
 SPEC CHECKSUMS:
   camera_avfoundation: 04b44aeb14070126c6529e5ab82cc7c9fca107cf
+  DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
+  DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
+  ffmpeg-kit-ios-full: 34de6ec504f88a7289fe223c2db93afc2c9f931a
+  ffmpeg_kit_flutter_full: 0f013270b9743e39e78b6d2f0fa53ebac0259af4
+  file_picker: a0560bc09d61de87f12d246fc47d2119e6ef37be
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   google_mlkit_commons: 92c769cc2e0a2bfdeb3c38091a36e8a9cc8c63d4
+  google_mlkit_object_detection: d0865775c31032eb7d945eae66d08b0456ba3ce6
   google_mlkit_pose_detection: fac3532bc5a8698d747a1ccf085c4ea7e9057398
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMLKit: eff9e23ec1d90ea4157a1ee2e32a4f610c5b3318
@@ -121,14 +235,23 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   MLImage: 0ad1c5f50edd027672d8b26b0fee78a8b4a0fc56
   MLKitCommon: 07c2c33ae5640e5380beaaa6e4b9c249a205542d
+  MLKitImageLabelingCommon: 23f0c9037c2c6433784db594bd1bb87173172fe9
+  MLKitObjectDetection: a5f066aa6e90f134fc1ac47940e95381b7eb5257
+  MLKitObjectDetectionCommon: 0198709a728984e3b6fac98a5fa53a8042880336
+  MLKitObjectDetectionCustom: b243512ccac75c98399c272e213b53413a255c07
   MLKitPoseDetection: 9570bd90f18cd38c1599314785d1f70401569d94
   MLKitPoseDetectionAccurate: 2c40d53a7b8cbb67b0ca1892b221f24ef4bac1ce
   MLKitPoseDetectionCommon: b1fc630b8af919dd04bf3dd6c24cec239c0f95fd
   MLKitVision: 45e79d68845a2de77e2dd4d7f07947f0ed157b0e
+  MLKitVisionKit: 8a7abd5f11aeb1add2942a694c2685eca422a849
   MLKitXenoCommon: ce5047943af6b4be7ae035dd81b3a56fdb29aab3
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  SDWebImage: f84b0feeb08d2d11e6a9b843cb06d75ebf5b8868
+  SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
+  video_player_avfoundation: 2cef49524dd1f16c5300b9cd6efd9611ce03639b
 
 PODFILE CHECKSUM: 819463e6a0290f5a72f145ba7cde16e8b6ef0796
 

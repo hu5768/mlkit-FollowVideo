@@ -103,7 +103,8 @@ class VideoPoseController extends GetxController {
     int currentFrame = (poseHistory.length * _elapsedMs / totalMs).floor();
 
     final current = controller.value?.value.position.inMilliseconds ?? 1;
-    if (current < 100) {
+    //print('current : $current');
+    if (current < 400 && _elapsedMs != 0) {
       _elapsedMs = 0;
     }
     if (currentFrame < poseHistory.length) {

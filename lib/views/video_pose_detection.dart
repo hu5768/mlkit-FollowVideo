@@ -22,44 +22,47 @@ class VideoPoseDetection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('GetX Pose Detection')),
-      body: Column(
-        children: [
-          ElevatedButton(
-            onPressed: videoController.pickVideo,
-            child: const Text('비디오 선택'),
-          ),
-          Obx(() => Text(
-              "Frame: ${videoController.currentFrameIndex} / ${videoController.poseHistory.length}")),
-          Obx(() {
-            final player = videoController.controller.value;
-            print("🎥 controller: $player");
-            if (player != null && player.value.isInitialized) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.6,
-                child: AspectRatio(
-                  aspectRatio: player.value.aspectRatio,
-                  child: Stack(
-                    children: [
-                      VideoPlayer(player),
-                      CustomPaint(
-                        painter: PosePainter(
-                          videoController.poseHistory.isEmpty
-                              ? []
-                              : videoController.poseHistory[
-                                  videoController.currentFrameIndex.value],
-                          player.value.size,
+      appBar: AppBar(title: const Text('Pose Detection test')),
+      body: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: videoController.pickVideo,
+              child: const Text('비디오 선택'),
+            ),
+            Obx(() => Text(
+                "Frame: ${videoController.currentFrameIndex.value} / ${videoController.poseHistory.length}")),
+            Obx(() {
+              final player = videoController.controller.value;
+              print("🎥 controller: $player");
+              if (player != null && player.value.isInitialized) {
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: AspectRatio(
+                    aspectRatio: player.value.aspectRatio,
+                    child: Stack(
+                      children: [
+                        VideoPlayer(player),
+                        CustomPaint(
+                          painter: PosePainter(
+                            videoController.poseHistory.isEmpty
+                                ? []
+                                : videoController.poseHistory[
+                                    videoController.currentFrameIndex.value],
+                            player.value.size,
+                          ),
+                          child: Container(),
                         ),
-                        child: Container(),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-        ],
+                );
+              }
+              return const SizedBox.shrink();
+            }),
+          ],
+        ),
       ),
     );
   }
