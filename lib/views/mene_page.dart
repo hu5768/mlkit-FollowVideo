@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:follow_video/views/camera_pose_detection.dart';
 import 'package:follow_video/views/video_crop_test.dart';
+import 'package:follow_video/views/video_pose_crop.dart';
 import 'package:follow_video/views/video_pose_detection.dart';
 
 class MenePage extends StatelessWidget {
@@ -47,6 +48,16 @@ class MenePage extends StatelessWidget {
                 ),
                 Column(
                   children: [
+                    const Text("분석 후 크롭"),
+                    OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => VideoPoseCrop()),
+                          );
+                        },
+                        child: const Icon(Icons.camera_alt)),
                     const Text("갤러리 크롭"),
                     OutlinedButton(
                         onPressed: () {
