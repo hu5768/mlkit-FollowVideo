@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.follow_video"
+    namespace = "com.climbing.follow_video"
     compileSdk = 34 //flutter.compileSdkVersion
     //ndkVersion = flutter.ndkVersion
     ndkVersion "25.1.8937393"
@@ -27,18 +27,30 @@ android {
     //     versionName = flutter.versionName
     // }
     defaultConfig {
-    applicationId "com.example.follow_video"
+    applicationId "com.climbing.follow_video"
     minSdkVersion 24  // 최소 지원 버전 (변경 가능)
     targetSdkVersion 34  // 최신 버전으로 변경 (필요한 경우)
     versionCode 1
     versionName "1.0.0"
-}
-
+    }
+    signingConfigs {
+        release {
+            def keystoreProperties = new Properties()
+            def keystoreFile = rootProject.file("key.properties")
+            if (keystoreFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystoreFile))
+            }
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
+    }
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig = signingConfigs.release
         }
     }
 }
