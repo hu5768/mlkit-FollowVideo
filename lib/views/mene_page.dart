@@ -11,11 +11,12 @@ class MenePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
+            Column(
               children: [
                 Column(
                   children: [
@@ -58,16 +59,16 @@ class MenePage extends StatelessWidget {
                           );
                         },
                         child: const Icon(Icons.camera_alt)),
-                    const Text("갤러리 크롭"),
-                    OutlinedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => VideoCropTest()),
-                          );
-                        },
-                        child: const Icon(Icons.camera_alt)),
+                    // const Text("갤러리 크롭"),
+                    // OutlinedButton(
+                    //     onPressed: () {
+                    //       Navigator.push(
+                    //         context,
+                    //         MaterialPageRoute(
+                    //             builder: (context) => VideoCropTest()),
+                    //       );
+                    //     },
+                    //     child: const Icon(Icons.camera_alt)),
                   ],
                 ),
               ],

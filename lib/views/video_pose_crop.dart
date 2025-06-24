@@ -22,9 +22,19 @@ class VideoPoseCrop extends StatelessWidget {
               onPressed: videoController.pickVideo,
               child: const Text('비디오 선택'),
             ),
-            ElevatedButton(
-              onPressed: videoController.togglePlayPause,
-              child: const Text('영상 실행'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: videoController.togglePlayPause,
+                  child: const Text('영상 실행'),
+                ),
+                ElevatedButton(
+                  onPressed: () => videoController
+                      .saveVideoToGallery(videoController.outputPath!),
+                  child: const Text('영상 저장'),
+                ),
+              ],
             ),
             Obx(() => Column(
                   children: [

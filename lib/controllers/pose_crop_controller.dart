@@ -4,9 +4,12 @@ import 'dart:io';
 import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_full/return_code.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'package:media_store_plus/media_store_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:video_player/video_player.dart';
 
 class PoseCropController extends GetxController {
@@ -14,8 +17,7 @@ class PoseCropController extends GetxController {
   RxList<List<PoseLandmark>> poseHistory = <List<PoseLandmark>>[].obs;
   RxInt currentFrameIndex = 0.obs;
   RxString? videoPath = RxString('');
-  Timer? _poseTimer;
-  final int _elapsedMs = 0;
+  String? outputPath;
 
   final RxString progressLabel = '영상 선택 대기 중...'.obs;
   final RxDouble progressValue = 0.0.obs;
@@ -31,12 +33,11 @@ class PoseCropController extends GetxController {
     if (result == null || result.files.single.path == null) return;
 
     videoPath!.value = result.files.single.path!;
-    final inputPath = result.files.single.path!;
 
     final tempDir = await getTemporaryDirectory();
     final frameDir = '${tempDir.path}/frames';
     final croppedDir = '${tempDir.path}/cropped';
-    final outputPath = '$croppedDir/final_output.mp4';
+    outputPath = '$croppedDir/final_output.mp4';
 
     await _deletePreviousImages(); //디렉토리에 남아있는 jpg 제거
 
@@ -45,18 +46,19 @@ class PoseCropController extends GetxController {
 
     updateProgress('포즈 분석 중...', 0.3);
     if (frames.isNotEmpty) await runPoseDetectionOnFrames(frames);
+    smoothPoseHistory(windowSize: 5);
     print('✅ 총 프레임 수: ${frames.length}');
     print('✅ 저장된 pose 수: ${poseHistory.length}');
 
     updateProgress('크롭 및 조립 중...', 0.7);
     await cropAndAssembleFrames(
-        frames: frames, croppedDir: croppedDir, outputPath: outputPath);
+        frames: frames, croppedDir: croppedDir, outputPath: outputPath!);
 
     updateProgress('영상 초기화 중...', 0.9);
     if (controller.value != null) {
       await controller.value!.dispose();
     }
-    final newController = VideoPlayerController.file(File(outputPath));
+    final newController = VideoPlayerController.file(File(outputPath!));
     await newController.initialize();
     controller.value = newController;
     updateProgress('완료', 1.0);
@@ -184,8 +186,15 @@ class PoseCropController extends GetxController {
     // 3. crop된 프레임 영상으로 조립
     // final assembleCommand =
     //     '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v libx264 -pix_fmt yuv420p "$outputPath"';
+    //mpeg4
+    // final assembleCommand =
+    //     '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -pix_fmt yuv420p "$outputPath"';
+    //무손실 합성
     final assembleCommand =
-        '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -pix_fmt yuv420p "$outputPath"';
+        '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -q:v 2 -pix_fmt yuv420p "$outputPath"';
+    // final assembleCommand = '-framerate 30 -i "$croppedDir/frame_%05d.jpg" '
+    //     '-c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p "$outputPath"';
+
     final session = await FFmpegKit.execute(assembleCommand);
     final logs = await session.getAllLogs();
     for (final log in logs) {
@@ -209,6 +218,88 @@ class PoseCropController extends GetxController {
       ctrl.pause();
     } else {
       ctrl.play();
+    }
+  }
+
+  Future<void> saveVideoToGallery(String videoPath) async {
+    // Android 권한 요청
+    final status = await Permission.videos.request();
+    if (!status.isGranted) {
+      print('❌ 저장 권한 거부됨');
+      return;
+    }
+
+    final file = File(videoPath);
+    if (!file.existsSync()) {
+      print('❌ 영상 파일이 존재하지 않음');
+      return;
+    }
+
+    try {
+      final store = MediaStore();
+
+      final result = await store.saveFile(
+        tempFilePath: videoPath, // 저장할 임시 파일 경로
+        dirType: DirType.video, // 저장할 카테고리 (사진/영상 등)
+        dirName: DirName.movies, // 저장할 기본 폴더 (예: Movies, DCIM 등)
+        relativePath: 'MyPoseVideos', // 하위 폴더명 (선택)
+      );
+
+      if (result != null) {
+        print('✅ 저장 완료: ${result.uri}');
+        Fluttertoast.showToast(
+          msg: '✅ 영상이 갤러리에 저장되었습니다!',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+        );
+      } else {
+        print('❌ 저장 실패: 반환값 null');
+      }
+    } catch (e) {
+      print('❌ 저장 중 예외 발생: $e');
+    }
+  }
+
+  List<double> movingAverage(List<double> values, int windowSize) {
+    final smoothed = <double>[];
+    for (int i = 0; i < values.length; i++) {
+      final start = (i - windowSize + 1).clamp(0, values.length - 1);
+      final end = i + 1;
+      final window = values.sublist(start, end);
+      smoothed.add(window.reduce((a, b) => a + b) / window.length);
+    }
+    return smoothed;
+  }
+
+  void smoothPoseHistory({int windowSize = 3}) {
+    final int frameCount = poseHistory.length;
+    if (frameCount == 0) return;
+    final int landmarkCount = poseHistory[0].length;
+
+    for (int landmarkIndex = 0;
+        landmarkIndex < landmarkCount;
+        landmarkIndex++) {
+      final xList = <double>[];
+      final yList = <double>[];
+
+      for (int frame = 0; frame < frameCount; frame++) {
+        xList.add(poseHistory[frame][landmarkIndex].x);
+        yList.add(poseHistory[frame][landmarkIndex].y);
+      }
+
+      final smoothX = movingAverage(xList, windowSize);
+      final smoothY = movingAverage(yList, windowSize);
+
+      for (int frame = 0; frame < frameCount; frame++) {
+        final orig = poseHistory[frame][landmarkIndex];
+        poseHistory[frame][landmarkIndex] = PoseLandmark(
+          type: orig.type,
+          x: smoothX[frame],
+          y: smoothY[frame],
+          z: orig.z,
+          likelihood: orig.likelihood,
+        );
+      }
     }
   }
 
