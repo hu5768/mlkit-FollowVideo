@@ -17,6 +17,14 @@ class PoseCropController extends GetxController {
   Timer? _poseTimer;
   final int _elapsedMs = 0;
 
+  final RxString progressLabel = '영상 선택 대기 중...'.obs;
+  final RxDouble progressValue = 0.0.obs;
+  void updateProgress(String label, double value) {
+    progressLabel.value = label;
+
+    progressValue.value = value;
+  }
+
   Future<void> pickVideo() async {
     FilePickerResult? result =
         await FilePicker.platform.pickFiles(type: FileType.video);
@@ -31,28 +39,27 @@ class PoseCropController extends GetxController {
     final outputPath = '$croppedDir/final_output.mp4';
 
     await _deletePreviousImages(); //디렉토리에 남아있는 jpg 제거
+
+    updateProgress('프레임 추출 중...', 0.1);
     final frames = await extractFramesOnce(videoPath!.value, frameDir); //프레임 분할
-    print("프레임 추출 : ${frames.length}");
+
+    updateProgress('포즈 분석 중...', 0.3);
     if (frames.isNotEmpty) await runPoseDetectionOnFrames(frames);
     print('✅ 총 프레임 수: ${frames.length}');
     print('✅ 저장된 pose 수: ${poseHistory.length}');
 
-    for (int i = 0; i < poseHistory.length; i++) {
-      final landmarks = poseHistory[i];
-      print('🦴 프레임 $i: landmark 개수 = ${landmarks.length}');
-    }
+    updateProgress('크롭 및 조립 중...', 0.7);
     await cropAndAssembleFrames(
         frames: frames, croppedDir: croppedDir, outputPath: outputPath);
 
-    print("크롭");
+    updateProgress('영상 초기화 중...', 0.9);
     if (controller.value != null) {
       await controller.value!.dispose();
     }
-    print("컨트롤러 교체");
-    // 6. 새로운 컨트롤러로 교체 + 초기화
     final newController = VideoPlayerController.file(File(outputPath));
     await newController.initialize();
     controller.value = newController;
+    updateProgress('완료', 1.0);
   }
 
   Future<void> _deletePreviousImages() async {

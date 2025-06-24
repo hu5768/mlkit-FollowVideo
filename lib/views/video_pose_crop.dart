@@ -26,6 +26,14 @@ class VideoPoseCrop extends StatelessWidget {
               onPressed: videoController.togglePlayPause,
               child: const Text('영상 실행'),
             ),
+            Obx(() => Column(
+                  children: [
+                    LinearProgressIndicator(
+                        value: videoController.progressValue.value),
+                    const SizedBox(height: 8),
+                    Text(videoController.progressLabel.value),
+                  ],
+                )),
             Obx(() {
               final player = videoController.controller.value;
               if (player != null && player.value.isInitialized) {
