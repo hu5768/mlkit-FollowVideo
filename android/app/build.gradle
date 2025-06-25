@@ -5,6 +5,16 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+
 android {
     namespace = "com.climbing.follow_video"
     compileSdk = 34 //flutter.compileSdkVersion
@@ -27,11 +37,11 @@ android {
     //     versionName = flutter.versionName
     // }
     defaultConfig {
-    applicationId "com.climbing.follow_video"
-    minSdkVersion 24  // 최소 지원 버전 (변경 가능)
-    targetSdkVersion 34  // 최신 버전으로 변경 (필요한 경우)
-    versionCode 1
-    versionName "1.0.0"
+        applicationId "com.climbing.follow_video"
+        minSdkVersion 24  // 최소 지원 버전 (변경 가능)
+        targetSdkVersion 34  // 최신 버전으로 변경 (필요한 경우)
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
     }
     signingConfigs {
         release {
