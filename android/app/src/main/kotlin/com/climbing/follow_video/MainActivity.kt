@@ -1,4 +1,4 @@
-package com.example.follow_video
+package com.climbing.follow_video
 
 import io.flutter.embedding.android.FlutterActivity
 
