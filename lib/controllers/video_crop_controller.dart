@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
@@ -22,6 +23,7 @@ class VideoCropController extends GetxController {
 
   final optionController = Get.put(OptionController());
   Size? originSize;
+  Uint8List? rawFrameBytes;
 
   final RxString progressLabel = '영상 선택 대기 중...'.obs;
   final RxDouble progressValue = 0.0.obs;
@@ -49,6 +51,21 @@ class VideoCropController extends GetxController {
           '📏 원본 해상도: ${originSize!.width.toInt()} x ${originSize!.height.toInt()}');
     } else {
       print('❌ 영상 해상도 추출 실패');
+    }
+
+    // 2. FFmpeg로 첫 프레임 추출
+    final tempDir = await getTemporaryDirectory();
+    final framePath = '${tempDir.path}/preview_raw.jpg';
+
+    final cmd = '-i "${videoPath.value}" -ss 00:00:01 -vframes 1 "$framePath"';
+    await FFmpegKit.execute(cmd);
+
+    final file = File(framePath);
+    if (await file.exists()) {
+      rawFrameBytes = await file.readAsBytes();
+      print('📸 첫 프레임 저장 완료 (${rawFrameBytes!.lengthInBytes} bytes)');
+    } else {
+      print('❌ 첫 프레임 추출 실패');
     }
     return true;
   }

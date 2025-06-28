@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:follow_video/controllers/option_controller.dart';
+import 'package:follow_video/controllers/video_crop_controller.dart';
 import 'package:follow_video/views/loading_page.dart';
+import 'package:follow_video/views/preview_widget.dart';
 import 'package:get/get.dart';
 
 class OptionPage extends StatelessWidget {
@@ -25,6 +27,11 @@ class OptionPage extends StatelessWidget {
               child: Obx(() => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text('미리보기',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.normal)),
+                      const SizedBox(height: 8),
+                      buildPreviewSection(),
                       const Text('화면 비율',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.normal)),
