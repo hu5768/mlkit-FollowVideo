@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:follow_video/controllers/option_controller.dart';
-import 'package:follow_video/controllers/video_crop_controller.dart';
 import 'package:follow_video/views/loading_page.dart';
 import 'package:get/get.dart';
 
@@ -10,7 +9,6 @@ class OptionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final optionController = Get.put(OptionController());
-    final videoCropController = Get.put(VideoCropController());
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(

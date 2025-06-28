@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:ffmpeg_kit_flutter_full/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_full/return_code.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:follow_video/controllers/option_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:media_store_plus/media_store_plus.dart';
@@ -17,6 +19,9 @@ class VideoCropController extends GetxController {
   RxList<List<PoseLandmark>> poseHistory = <List<PoseLandmark>>[].obs;
   RxString videoPath = RxString('');
   RxString outputPath = RxString('');
+
+  final optionController = Get.put(OptionController());
+  Size? originSize;
 
   final RxString progressLabel = '영상 선택 대기 중...'.obs;
   final RxDouble progressValue = 0.0.obs;
@@ -32,6 +37,19 @@ class VideoCropController extends GetxController {
     if (result == null || result.files.single.path == null) return false;
 
     videoPath.value = result.files.single.path!;
+
+    // 원본 영상 사이즈 추출
+    final tempController = VideoPlayerController.file(File(videoPath.value));
+    await tempController.initialize();
+    originSize = tempController.value.size;
+    await tempController.dispose();
+
+    if (originSize != null) {
+      print(
+          '📏 원본 해상도: ${originSize!.width.toInt()} x ${originSize!.height.toInt()}');
+    } else {
+      print('❌ 영상 해상도 추출 실패');
+    }
     return true;
   }
 
@@ -160,19 +178,36 @@ class VideoCropController extends GetxController {
       }
       final landmarks = poseHistory[i];
 
-      final left = landmarks[PoseLandmarkType.leftShoulder.index];
-      final right = landmarks[PoseLandmarkType.rightShoulder.index];
+      final left = landmarks[PoseLandmarkType.leftHip.index];
+      final right = landmarks[PoseLandmarkType.rightHip.index];
 
       final avgX = (left.x + right.x) / 2;
       final avgY = (left.y + right.y) / 2;
 
-      final x = avgX - 270; // 프레임마다 x 이동 (예시)
-      final y = avgY - 200;
-      const w = 540;
-      const h = 960;
+      final originalW = originSize!.width;
+      final originalH = originSize!.height;
+
+      final ratioParts = optionController.selectedRatio.value.split(':');
+      final ratioW = int.parse(ratioParts[0]);
+      final ratioH = int.parse(ratioParts[1]);
+      final aspectRatio = ratioW / ratioH;
+
+      double cropH;
+      if (optionController.cropOption.value == 'custom') {
+        cropH = originalH * (optionController.cropSize.value / 100);
+      } else {
+        // auto 모드일 때, 이후 구현
+        cropH = originalH * 0.7; // 예시 default
+      }
+
+      // 비율에 따라 cropW 계산
+      final cropW = cropH * aspectRatio;
+
+      final x = avgX - cropW / 2;
+      final y = avgY - cropH / 2;
 
       final cropCommand =
-          '-i "$inputPath" -vf "crop=$w:$h:$x:$y,pad=$w:$h:(ow-iw)/2:(oh-ih)/2" "$outputFrame"';
+          '-i "$inputPath" -vf "crop=$cropW:$cropH:$x:$y,pad=$cropW:$cropH:(ow-iw)/2:(oh-ih)/2" "$outputFrame"';
       await FFmpegKit.execute(cropCommand);
     }
 
