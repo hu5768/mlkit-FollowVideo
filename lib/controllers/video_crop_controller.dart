@@ -29,7 +29,6 @@ class VideoCropController extends GetxController {
   final RxDouble progressValue = 0.0.obs;
   void updateProgress(String label, double value) {
     progressLabel.value = label;
-
     progressValue.value = value;
   }
 
@@ -55,7 +54,7 @@ class VideoCropController extends GetxController {
 
     // 2. FFmpeg로 첫 프레임 추출
     final tempDir = await getTemporaryDirectory();
-    final framePath = '${tempDir.path}/preview_raw.jpg';
+    final framePath = '${tempDir.path}/preview_raw.png';
 
     final cmd = '-i "${videoPath.value}" -ss 00:00:01 -vframes 1 "$framePath"';
     await FFmpegKit.execute(cmd);
@@ -70,17 +69,16 @@ class VideoCropController extends GetxController {
     return true;
   }
 
-  //영상 만들기
   Future<void> makeVideo() async {
     final tempDir = await getTemporaryDirectory();
     final frameDir = '${tempDir.path}/frames';
     final croppedDir = '${tempDir.path}/cropped';
     outputPath.value = '$croppedDir/final_output.mp4';
 
-    await _deletePreviousImages(); //디렉토리에 남아있는 jpg 제거
+    await _deletePreviousImages();
 
     updateProgress('프레임 추출 중...', 0.1);
-    final frames = await extractFramesOnce(videoPath.value, frameDir); //프레임 분할
+    final frames = await extractFramesOnce(videoPath.value, frameDir);
 
     updateProgress('무브 분석 중...', 0.3);
     if (frames.isNotEmpty) await runPoseDetectionOnFrames(frames);
@@ -105,23 +103,21 @@ class VideoCropController extends GetxController {
     final dir = await getTemporaryDirectory();
     final files = dir.listSync();
     for (var file in files) {
-      if (file is File && file.path.endsWith('.jpg')) await file.delete();
+      if (file is File && file.path.endsWith('.png')) await file.delete();
     }
   }
 
-  //프레임 분할
+//비디오 프레임 분할
   Future<List<File>> extractFramesOnce(
       String videoPath, final outputDir) async {
     final outputDirRef = Directory(outputDir);
-
-    // 디렉토리가 존재하면 모두 삭제
     if (await outputDirRef.exists()) {
+      // 디렉토리가 존재하면 모두 삭제
       await outputDirRef.delete(recursive: true);
     }
-    // 새로 생성
     await outputDirRef.create(recursive: true);
     final command =
-        '-i "$videoPath" -vf fps=30 -vsync vfr "$outputDir/frame_%05d.jpg"';
+        '-i "$videoPath" -vf fps=30 -vsync vfr "$outputDir/frame_%05d.png"';
 
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -129,7 +125,7 @@ class VideoCropController extends GetxController {
       final files = Directory(outputDir)
           .listSync()
           .whereType<File>()
-          .where((f) => f.path.endsWith('.jpg'))
+          .where((f) => f.path.endsWith('.png'))
           .toList()
         ..sort((a, b) => a.path.compareTo(b.path));
       return files;
@@ -137,9 +133,10 @@ class VideoCropController extends GetxController {
     return [];
   }
 
-  int getCropX(int frameIndex) => 100 + frameIndex * 2; // 오른쪽으로 이동
-  int getCropY(int frameIndex) => 50; // 고정
+  int getCropX(int frameIndex) => 100 + frameIndex * 2;
+  int getCropY(int frameIndex) => 50;
 
+//프레임별 포즈 디텍팅
   Future<void> runPoseDetectionOnFrames(List<File> frames) async {
     final poseDetector = PoseDetector(
         options: PoseDetectorOptions(mode: PoseDetectionMode.stream));
@@ -164,7 +161,7 @@ class VideoCropController extends GetxController {
       x: 0.0,
       y: 0.0,
       z: 0.0,
-      likelihood: 0.0, // 확률도 0으로
+      likelihood: 0.0,
     );
   }
 
@@ -172,6 +169,7 @@ class VideoCropController extends GetxController {
     return PoseLandmarkType.values.map((type) => emptyLandmark(type)).toList();
   }
 
+//프레임별 크롭
   Future<void> cropAndAssembleFrames({
     required List<File> frames,
     required String croppedDir,
@@ -183,12 +181,11 @@ class VideoCropController extends GetxController {
       await croppedDirectory.delete(recursive: true);
     }
     await croppedDirectory.create(recursive: true);
-
-    // 2. 프레임별 crop
+// 2. 프레임별 crop
     for (int i = 0; i < frames.length; i++) {
       final inputPath = frames[i].path;
       final outputFrame =
-          '$croppedDir/frame_${i.toString().padLeft(5, '0')}.jpg';
+          '$croppedDir/frame_${i.toString().padLeft(5, '0')}.png';
 
       if (i >= poseHistory.length) {
         print('⚠️ poseHistory 길이 부족: $i / ${poseHistory.length}');
@@ -215,10 +212,9 @@ class VideoCropController extends GetxController {
         cropH = originalH * (optionController.cropSize.value / 100);
       } else {
         // auto 모드일 때, 이후 구현
-        cropH = originalH * 0.7; // 예시 default
+        cropH = originalH * 0.7;
       }
 
-      // 비율에 따라 cropW 계산
       final cropW = cropH * aspectRatio;
 
       final x = avgX - cropW / 2;
@@ -232,23 +228,12 @@ class VideoCropController extends GetxController {
     for (int i = 0; i < frames.length; i++) {
       final inputPath = frames[i].path;
       final outputFrame =
-          '$croppedDir/frame_${i.toString().padLeft(5, '0')}.jpg';
-
-      // 디버그용 로그 추가
+          '$croppedDir/frame_${i.toString().padLeft(5, '0')}.png';
       print('➡️ crop: $inputPath → $outputFrame');
     }
 
-    // 3. crop된 프레임 영상으로 조립
-    // final assembleCommand =
-    //     '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v libx264 -pix_fmt yuv420p "$outputPath"';
-    //mpeg4
-    // final assembleCommand =
-    //     '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -pix_fmt yuv420p "$outputPath"';
-    //무손실 합성
     final assembleCommand =
-        '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -q:v 1 -pix_fmt yuv420p "$outputPath"';
-    // final assembleCommand = '-framerate 30 -i "$croppedDir/frame_%05d.jpg" '
-    //     '-c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p "$outputPath"';
+        '-framerate 30 -i "$croppedDir/frame_%05d.png" -c:v mpeg4 -q:v 1 -pix_fmt yuv420p "$outputPath"';
 
     final session = await FFmpegKit.execute(assembleCommand);
     final logs = await session.getAllLogs();
@@ -275,6 +260,7 @@ class VideoCropController extends GetxController {
     return smoothed;
   }
 
+//포즈 디텍팅 결과 스무딩
   void smoothPoseHistory({int windowSize = 3}) {
     final int frameCount = poseHistory.length;
     if (frameCount == 0) return;
@@ -308,10 +294,10 @@ class VideoCropController extends GetxController {
   }
 
   Future<void> reset() async {
-    controller.value?.dispose(); // VideoPlayerController는 메모리 해제 필수
+    controller.value?.dispose();
     controller.value = null;
 
-    poseHistory.clear(); // 리스트 초기화
+    poseHistory.clear();
     videoPath.value = '';
     outputPath.value = '';
 
@@ -337,9 +323,7 @@ class VideoCropController extends GetxController {
     }
   }
 
-  //영상저장
   Future<void> saveVideoToGallery(String videoPath) async {
-    // Android 권한 요청
     final status = await Permission.videos.request();
     if (!status.isGranted) {
       print('❌ 저장 권한 거부됨');
@@ -356,10 +340,10 @@ class VideoCropController extends GetxController {
       final store = MediaStore();
 
       final result = await store.saveFile(
-        tempFilePath: videoPath, // 저장할 임시 파일 경로
-        dirType: DirType.video, // 저장할 카테고리 (사진/영상 등)
-        dirName: DirName.movies, // 저장할 기본 폴더 (예: Movies, DCIM 등)
-        relativePath: 'MyPoseVideos', // 하위 폴더명 (선택)
+        tempFilePath: videoPath,
+        dirType: DirType.video,
+        dirName: DirName.movies,
+        relativePath: 'MyPoseVideos',
       );
 
       if (result != null) {
