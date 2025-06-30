@@ -27,7 +27,7 @@ Widget buildPreviewSection() {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final width = constraints.maxWidth;
-        final cropScale = cropSize / 100.0;
+        final cropScale = 100 / cropSize.value;
         return Container(
           color: const Color.fromARGB(255, 0, 0, 0),
           child: SizedBox(

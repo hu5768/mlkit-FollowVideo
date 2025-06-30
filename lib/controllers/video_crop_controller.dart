@@ -84,7 +84,8 @@ class VideoCropController extends GetxController {
 
     updateProgress('무브 분석 중...', 0.3);
     if (frames.isNotEmpty) await runPoseDetectionOnFrames(frames);
-    smoothPoseHistory(windowSize: 5);
+
+    smoothPoseHistory(windowSize: optionController.smoothingWindowSize);
 
     updateProgress('크롭 및 조립 중...', 0.7);
     await cropAndAssembleFrames(
@@ -245,7 +246,7 @@ class VideoCropController extends GetxController {
     //     '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -pix_fmt yuv420p "$outputPath"';
     //무손실 합성
     final assembleCommand =
-        '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -q:v 2 -pix_fmt yuv420p "$outputPath"';
+        '-framerate 30 -i "$croppedDir/frame_%05d.jpg" -c:v mpeg4 -q:v 1 -pix_fmt yuv420p "$outputPath"';
     // final assembleCommand = '-framerate 30 -i "$croppedDir/frame_%05d.jpg" '
     //     '-c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p "$outputPath"';
 

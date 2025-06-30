@@ -124,8 +124,8 @@ class OptionPage extends StatelessWidget {
                                       child: Slider(
                                         value: optionController.cropSize.value,
                                         min: 10,
-                                        max: 90,
-                                        divisions: 16, // 5% 단위로
+                                        max: 100,
+                                        divisions: 18, // 5% 단위로
                                         activeColor: const Color.fromARGB(
                                             255, 213, 213, 213),
                                         onChanged: (value) {
