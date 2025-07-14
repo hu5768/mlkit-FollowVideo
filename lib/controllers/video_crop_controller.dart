@@ -56,6 +56,11 @@ class VideoCropController extends GetxController {
     final tempDir = await getTemporaryDirectory();
     final framePath = '${tempDir.path}/preview_raw.png';
 
+    // 동일이름 사진 삭제
+    final existing = File(framePath);
+    if (await existing.exists()) {
+      await existing.delete();
+    }
     final cmd = '-i "${videoPath.value}" -ss 00:00:01 -vframes 1 "$framePath"';
     await FFmpegKit.execute(cmd);
 
@@ -207,22 +212,43 @@ class VideoCropController extends GetxController {
       final ratioH = int.parse(ratioParts[1]);
       final aspectRatio = ratioW / ratioH;
 
-      double cropH;
+      double cropH, cropW;
       if (optionController.cropOption.value == 'custom') {
         cropH = originalH * (optionController.cropSize.value / 100);
+        cropW = originalW * (optionController.cropSize.value / 100);
       } else {
         // auto 모드일 때, 이후 구현
         cropH = originalH * 0.7;
+        cropW = originalW * 0.7;
       }
 
-      final cropW = cropH * aspectRatio;
+      final originalAspectRatio = originalW / originalH;
+      if (aspectRatio < originalAspectRatio) {
+        // 원하는 비율이 가로로 더 긴 경우
+        cropW = (cropH * aspectRatio).toInt().toDouble();
+      } else {
+        // 원하는 비율이 세로로 더 긴 경우
+        cropH = (cropW / aspectRatio).toInt().toDouble();
+      }
 
       final x = avgX - cropW / 2;
       final y = avgY - cropH / 2;
-
+      // 안전 보정: 영상 경계를 벗어나지 않도록 crop 좌표 조정
+      double safeX =
+          x < 0 ? 0 : (x + cropW > originalW ? originalW - cropW : x);
+      double safeY =
+          y < 0 ? 0 : (y + cropH > originalH ? originalH - cropH : y);
+      print(' X: $safeX, Y: $safeY');
+      print('📐 cropW: $cropW, cropH: $cropH');
+      print('🖼 originalW: $originalW, originalH: $originalH');
       final cropCommand =
-          '-i "$inputPath" -vf "crop=$cropW:$cropH:$x:$y,pad=$cropW:$cropH:(ow-iw)/2:(oh-ih)/2" "$outputFrame"';
+          '-i "$inputPath" -vf "crop=$cropW:$cropH:$safeX:$safeY" "$outputFrame"';
       await FFmpegKit.execute(cropCommand);
+      final cropSession = await FFmpegKit.execute(cropCommand);
+      final cropReturnCode = await cropSession.getReturnCode();
+      if (!ReturnCode.isSuccess(cropReturnCode)) {
+        print('❌ crop 실패: $i번 프레임 ($inputPath)');
+      }
     }
 
     for (int i = 0; i < frames.length; i++) {
@@ -232,20 +258,31 @@ class VideoCropController extends GetxController {
       print('➡️ crop: $inputPath → $outputFrame');
     }
 
+    final tempVideoPath = '$croppedDir/temp_video.mp4';
+
+    // 1차: 프레임 조립 (무음 영상)
     final assembleCommand =
-        '-framerate 30 -i "$croppedDir/frame_%05d.png" -c:v mpeg4 -q:v 1 -pix_fmt yuv420p "$outputPath"';
-
-    final session = await FFmpegKit.execute(assembleCommand);
-    final logs = await session.getAllLogs();
-    for (final log in logs) {
-      print('🛠 FFmpeg: ${log.getMessage()}');
+        '-framerate 30 -i "$croppedDir/frame_%05d.png" -c:v mpeg4 -q:v 1 -pix_fmt yuv420p "$tempVideoPath"';
+    final assembleSession = await FFmpegKit.execute(assembleCommand);
+    final assembleLogs = await assembleSession.getAllLogs();
+    for (final log in assembleLogs) {
+      print('🛠 FFmpeg(assemble): ${log.getMessage()}');
     }
-    final returnCode = await session.getReturnCode();
 
+    // 2차: 오디오 병합
+    final mergeCommand =
+        '-i "$tempVideoPath" -i "${videoPath.value}" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -shortest "$outputPath"';
+    final mergeSession = await FFmpegKit.execute(mergeCommand);
+    final mergeLogs = await mergeSession.getAllLogs();
+    for (final log in mergeLogs) {
+      print('🛠 FFmpeg(merge): ${log.getMessage()}');
+    }
+
+    final returnCode = await mergeSession.getReturnCode();
     if (ReturnCode.isSuccess(returnCode)) {
-      print('✅ 영상 조립 완료: $outputPath');
+      print('✅ 영상 + 오디오 병합 완료: $outputPath');
     } else {
-      print('❌ 영상 조립 실패: $returnCode');
+      print('❌ 병합 실패: $returnCode');
     }
   }
 
@@ -339,8 +376,13 @@ class VideoCropController extends GetxController {
     try {
       final store = MediaStore();
 
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filename = 'pose_$timestamp.mp4';
+      final tempCopyPath = '${(await getTemporaryDirectory()).path}/$filename';
+      await file.copy(tempCopyPath);
+
       final result = await store.saveFile(
-        tempFilePath: videoPath,
+        tempFilePath: tempCopyPath,
         dirType: DirType.video,
         dirName: DirName.movies,
         relativePath: 'MyPoseVideos',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:follow_video/views/camera_pose_detection.dart';
 import 'package:follow_video/views/mene_page.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -17,6 +18,7 @@ Future<void> _requestPermissions() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
   await requestCameraPermission(); // 실행 시 권한 요청
   await _requestPermissions(); // 실행 시 권한 요청
   await MediaStore.ensureInitialized();

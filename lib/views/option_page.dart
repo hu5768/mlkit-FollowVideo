@@ -32,6 +32,7 @@ class OptionPage extends StatelessWidget {
                               fontSize: 18, fontWeight: FontWeight.normal)),
                       const SizedBox(height: 8),
                       buildPreviewSection(),
+                      const SizedBox(height: 12),
                       const Text('화면 비율',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.normal)),
@@ -103,15 +104,15 @@ class OptionPage extends StatelessWidget {
                           );
                         }).toList(),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
                       const Text('크롭 사이즈 옵션',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.normal)),
                       const SizedBox(height: 12),
                       Column(
                         children: [
-                          _radio(optionController, '자동', 'auto',
-                              group: optionController.cropOption),
+                          // _radio(optionController, '자동', 'auto',
+                          //     group: optionController.cropOption),
                           Column(
                             children: [
                               _radio(optionController, '사이즈 지정', 'custom',
