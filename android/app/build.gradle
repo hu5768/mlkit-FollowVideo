@@ -17,7 +17,7 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName')
 
 android {
     namespace = "com.climbing.follow_video"
-    compileSdk = 34 //flutter.compileSdkVersion
+    compileSdk = 35 //flutter.compileSdkVersion
     //ndkVersion = flutter.ndkVersion
     ndkVersion "25.1.8937393"
     compileOptions {
@@ -39,7 +39,7 @@ android {
     defaultConfig {
         applicationId "com.climbing.follow_video"
         minSdkVersion 24  // 최소 지원 버전 (변경 가능)
-        targetSdkVersion 34  // 최신 버전으로 변경 (필요한 경우)
+        targetSdkVersion 35  // 최신 버전으로 변경 (필요한 경우)
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
