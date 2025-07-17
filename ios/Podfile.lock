@@ -1,4 +1,6 @@
 PODS:
+  - app_tracking_transparency (0.0.1):
+    - Flutter
   - camera_avfoundation (0.0.1):
     - Flutter
   - DKImagePickerController/Core (4.3.9):
@@ -43,6 +45,10 @@ PODS:
     - DKImagePickerController/PhotoGallery
     - Flutter
   - Flutter (1.0.0)
+  - fluttertoast (0.0.2):
+    - Flutter
+  - Google-Mobile-Ads-SDK (11.13.0):
+    - GoogleUserMessagingPlatform (>= 1.1)
   - google_mlkit_commons (0.9.0):
     - Flutter
     - MLKitVision
@@ -56,6 +62,10 @@ PODS:
     - google_mlkit_commons
     - GoogleMLKit/PoseDetection (~> 7.0.0)
     - GoogleMLKit/PoseDetectionAccurate (~> 7.0.0)
+  - google_mobile_ads (5.3.1):
+    - Flutter
+    - Google-Mobile-Ads-SDK (~> 11.13.0)
+    - webview_flutter_wkwebview
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -78,6 +88,7 @@ PODS:
     - GoogleToolboxForMac/Defines (= 4.2.1)
   - "GoogleToolboxForMac/NSData+zlib (4.2.1)":
     - GoogleToolboxForMac/Defines (= 4.2.1)
+  - GoogleUserMessagingPlatform (3.0.0)
   - GoogleUtilities/Environment (8.0.2):
     - GoogleUtilities/Privacy
   - GoogleUtilities/Logger (8.0.2):
@@ -155,27 +166,36 @@ PODS:
   - video_player_avfoundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - webview_flutter_wkwebview (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
+  - app_tracking_transparency (from `.symlinks/plugins/app_tracking_transparency/ios`)
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
   - ffmpeg_kit_flutter_full (from `.symlinks/plugins/ffmpeg_kit_flutter_full/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Flutter (from `Flutter`)
+  - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - google_mlkit_commons (from `.symlinks/plugins/google_mlkit_commons/ios`)
   - google_mlkit_object_detection (from `.symlinks/plugins/google_mlkit_object_detection/ios`)
   - google_mlkit_pose_detection (from `.symlinks/plugins/google_mlkit_pose_detection/ios`)
+  - google_mobile_ads (from `.symlinks/plugins/google_mobile_ads/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
+  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
   trunk:
     - DKImagePickerController
     - DKPhotoGallery
     - ffmpeg-kit-ios-full
+    - Google-Mobile-Ads-SDK
     - GoogleDataTransport
     - GoogleMLKit
     - GoogleToolboxForMac
+    - GoogleUserMessagingPlatform
     - GoogleUtilities
     - GTMSessionFetcher
     - MLImage
@@ -196,6 +216,8 @@ SPEC REPOS:
     - SwiftyGif
 
 EXTERNAL SOURCES:
+  app_tracking_transparency:
+    :path: ".symlinks/plugins/app_tracking_transparency/ios"
   camera_avfoundation:
     :path: ".symlinks/plugins/camera_avfoundation/ios"
   ffmpeg_kit_flutter_full:
@@ -204,33 +226,44 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/file_picker/ios"
   Flutter:
     :path: Flutter
+  fluttertoast:
+    :path: ".symlinks/plugins/fluttertoast/ios"
   google_mlkit_commons:
     :path: ".symlinks/plugins/google_mlkit_commons/ios"
   google_mlkit_object_detection:
     :path: ".symlinks/plugins/google_mlkit_object_detection/ios"
   google_mlkit_pose_detection:
     :path: ".symlinks/plugins/google_mlkit_pose_detection/ios"
+  google_mobile_ads:
+    :path: ".symlinks/plugins/google_mobile_ads/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   video_player_avfoundation:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
+  webview_flutter_wkwebview:
+    :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
-  camera_avfoundation: 04b44aeb14070126c6529e5ab82cc7c9fca107cf
+  app_tracking_transparency: e169b653478da7bb15a6c61209015378ca73e375
+  camera_avfoundation: dd002b0330f4981e1bbcb46ae9b62829237459a4
   DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
   DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
   ffmpeg-kit-ios-full: 34de6ec504f88a7289fe223c2db93afc2c9f931a
-  ffmpeg_kit_flutter_full: 0f013270b9743e39e78b6d2f0fa53ebac0259af4
-  file_picker: a0560bc09d61de87f12d246fc47d2119e6ef37be
+  ffmpeg_kit_flutter_full: a2ad4ff5b14b7c040724edc8cd3bc293dd2d6d0f
+  file_picker: b159e0c068aef54932bb15dc9fd1571818edaf49
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  google_mlkit_commons: 92c769cc2e0a2bfdeb3c38091a36e8a9cc8c63d4
-  google_mlkit_object_detection: d0865775c31032eb7d945eae66d08b0456ba3ce6
-  google_mlkit_pose_detection: fac3532bc5a8698d747a1ccf085c4ea7e9057398
+  fluttertoast: 21eecd6935e7064cc1fcb733a4c5a428f3f24f0f
+  Google-Mobile-Ads-SDK: 14f57f2dc33532a24db288897e26494640810407
+  google_mlkit_commons: 384e4e206e122b6dad430d3158205e0b2fac6789
+  google_mlkit_object_detection: 9ef1ca3e752d84172c709dd23cbc35fcf5a97a5f
+  google_mlkit_pose_detection: 3e38d756c918444cc462692f4c745546313dea54
+  google_mobile_ads: fe0e2c1764ad95323dd0e3081d0bb2d58411f957
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMLKit: eff9e23ec1d90ea4157a1ee2e32a4f610c5b3318
   GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
+  GoogleUserMessagingPlatform: f8d0cdad3ca835406755d0a69aa634f00e76d576
   GoogleUtilities: 26a3abef001b6533cf678d3eb38fd3f614b7872d
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   MLImage: 0ad1c5f50edd027672d8b26b0fee78a8b4a0fc56
@@ -246,13 +279,14 @@ SPEC CHECKSUMS:
   MLKitVisionKit: 8a7abd5f11aeb1add2942a694c2685eca422a849
   MLKitXenoCommon: ce5047943af6b4be7ae035dd81b3a56fdb29aab3
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
-  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
-  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   SDWebImage: f84b0feeb08d2d11e6a9b843cb06d75ebf5b8868
   SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
-  video_player_avfoundation: 2cef49524dd1f16c5300b9cd6efd9611ce03639b
+  video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
+  webview_flutter_wkwebview: a4af96a051138e28e29f60101d094683b9f82188
 
-PODFILE CHECKSUM: 819463e6a0290f5a72f145ba7cde16e8b6ef0796
+PODFILE CHECKSUM: e2d88b13a3f7dc6799397242611be1181d282017
 
 COCOAPODS: 1.16.2
